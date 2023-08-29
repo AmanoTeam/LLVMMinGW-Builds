@@ -1,0 +1,32 @@
+---
+ build-llvm.sh | 2 +-
+ strip-llvm.sh | 2 ++
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/build-llvm.sh b/build-llvm.sh
+index 4a62fd9..5101911 100755
+--- a/build-llvm.sh
++++ b/build-llvm.sh
+@@ -299,7 +299,7 @@ cd $BUILDDIR
+ cmake \
+     ${CMAKE_GENERATOR+-G} "$CMAKE_GENERATOR" \
+     -DCMAKE_INSTALL_PREFIX="$PREFIX" \
+-    -DCMAKE_BUILD_TYPE=Release \
++    -DCMAKE_BUILD_TYPE=MinSizeRel \
+     -DLLVM_ENABLE_ASSERTIONS=$ASSERTS \
+     -DLLVM_ENABLE_PROJECTS="$PROJECTS" \
+     -DLLVM_TARGETS_TO_BUILD="ARM;AArch64;X86" \
+diff --git a/strip-llvm.sh b/strip-llvm.sh
+index e3b1bbd..0981be8 100755
+--- a/strip-llvm.sh
++++ b/strip-llvm.sh
+@@ -145,6 +145,8 @@ for i in *.so* *.dylib* cmake; do
+     case $i in
+     liblldb*|libclang-cpp*|libLLVM*)
+         ;;
++    libstdc++*)
++        ;;
+     *)
+         rm -rf $i
+         ;;
+-- 

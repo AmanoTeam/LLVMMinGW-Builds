@@ -1,0 +1,109 @@
+name: Build
+
+on:
+  push:
+    branches:
+        - '**'
+
+jobs:
+  native-build:
+    name: 'Native build'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@main
+      with:
+        submodules: true
+    - name: Install dependencies
+      run: |
+        sudo apt-get install ninja-build
+    - name: Check for cache
+      id: check-cache
+      uses: actions/cache@main
+      with:
+        key: llvmorg-17.0.0-rc3
+        lookup-only: true
+        path: |
+          /tmp/x86_64-linux-gnu.tar.xz
+          /tmp/x86_64-linux-gnu.tar.xz.sha256
+    - name: Build LLVM MinGW
+      if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
+      run: |
+        bash './build.sh' 'native'
+    - name: Generate tarball
+      if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
+      run: |
+        declare tarball_filename='/tmp/x86_64-linux-gnu.tar.xz'
+        tar --directory='/tmp' --create --file=- 'llvm-mingw' | xz --threads='0' --compress -9 > "${tarball_filename}"
+        sha256sum "${tarball_filename}" | sed 's|/tmp/||' > "${tarball_filename}.sha256"
+    - name: Upload artifact
+      if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
+      uses: actions/upload-artifact@main
+      with:
+        name: native-toolchain
+        if-no-files-found: error
+        path: |
+          /tmp/x86_64-linux-gnu.tar.xz
+          /tmp/x86_64-linux-gnu.tar.xz.sha256
+    - name: Cache artifact
+      if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
+      uses: actions/cache@main
+      with:
+        key: llvmorg-17.0.0-rc3
+        path: |
+          /tmp/x86_64-linux-gnu.tar.xz
+          /tmp/x86_64-linux-gnu.tar.xz.sha256
+  
+  cross-build:
+    name: 'Cross build'
+    needs: native-build
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    strategy:
+      matrix:
+        target: [
+          'x86_64-unknown-linux-gnu',
+          'i386-unknown-linux-gnu',
+          'arm-unknown-linux-gnueabihf',
+          'aarch64-unknown-linux-gnu'
+        ]
+    steps:
+    - uses: actions/checkout@main
+      with:
+        submodules: true
+    - name: Install dependencies
+      run: |
+        sudo apt-get install ninja-build
+    - name: Restore from cache
+      uses: actions/cache@main
+      with:
+        key: llvmorg-17.0.0-rc3
+        fail-on-cache-miss: true
+        path: |
+          /tmp/x86_64-linux-gnu.tar.xz
+          /tmp/x86_64-linux-gnu.tar.xz.sha256
+    - name: Setup toolchain
+      run: |
+        tar --directory='/tmp' --extract --file='/tmp/x86_64-linux-gnu.tar.xz'
+        mv '/tmp/llvm-mingw' '/tmp/llvm-mingw-toolchain'
+    - name: Build LLVM MinGW with OBGGCC
+      run: |
+        source './tools/setup_toolchain.sh'
+        export PATH="/tmp/llvm-mingw-toolchain/bin:${PATH}"
+        
+        bash './build.sh' '${{ matrix.target }}'
+    - name: Copy libraries
+      run: |
+        cp --recursive '/tmp/llvm-mingw-toolchain/lib/clang/17/lib' '/tmp/llvm-mingw/lib/clang/17'
+    - name: Generate tarball
+      run: |
+        declare tarball_filename='/tmp/${{ matrix.target }}.tar.xz'
+        tar --directory='/tmp' --create --file=- 'llvm-mingw' | xz --threads='0' --compress -9 > "${tarball_filename}"
+        sha256sum "${tarball_filename}" | sed 's|/tmp/||' > "${tarball_filename}.sha256"
+    - name: Upload artifact
+      uses: actions/upload-artifact@main
+      with:
+        name: cross-toolchain
+        if-no-files-found: error
+        path: |
+          /tmp/${{ matrix.target }}.tar.xz
+          /tmp/${{ matrix.target }}.tar.xz.sha256
