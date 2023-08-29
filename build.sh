@@ -28,7 +28,6 @@ fi
 
 if ! [ -d "${LLVM_MINGW_SOURCE}" ]; then
 	git clone \
-		--depth='1' \
 		--quiet \
 		'https://github.com/mstorsjo/llvm-mingw.git' \
 		"${LLVM_MINGW_SOURCE}"
