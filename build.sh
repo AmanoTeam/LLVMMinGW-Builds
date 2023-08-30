@@ -79,7 +79,8 @@ sed --in-place 's/CMAKE_BUILD_TYPE=Release/CMAKE_BUILD_TYPE=MinSizeRel/g' \
 	'./build-mingw-w64-libraries.sh' \
 	'./build-compiler-rt.sh' \
 	'./build-libcxx.sh' \
-	'./build-openmp.sh'
+	'./build-openmp.sh' \
+	'./build-llvm.sh'
 
 /proc/self/exe './build-all.sh' \
 	${cross_compile_flags} \
