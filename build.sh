@@ -33,7 +33,7 @@ if ! [ -d "${LLVM_MINGW_SOURCE}" ]; then
 		"${LLVM_MINGW_SOURCE}"
 	
 	cd "${LLVM_MINGW_SOURCE}"
-	git checkout --quiet 'e3545e2'
+	git checkout --quiet 'dc3e0ec'
 	
 	 patch \
 		--input="${CURRENT_SOURCE_DIRECTORY}/patches/llvm_mingw.patch" \
@@ -49,7 +49,7 @@ cd "${LLVM_MINGW_SOURCE}"
 
 CHECKOUT_ONLY='1' /proc/self/exe './build-llvm.sh'
 
-patch --input="${CURRENT_SOURCE_DIRECTORY}/patches/project_llvm.patch" --strip=1 --directory='./llvm-project'
+# patch --input="${CURRENT_SOURCE_DIRECTORY}/patches/project_llvm.patch" --strip=1 --directory='./llvm-project'
 
 if ! (( is_native )); then
 	[ -d "${INSTALL_PREFIX}/lib" ] || mkdir --parent "${INSTALL_PREFIX}/lib"

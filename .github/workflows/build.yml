@@ -20,7 +20,7 @@ jobs:
       id: check-cache
       uses: actions/cache@main
       with:
-        key: llvmorg-17.0.0-rc3
+        key: llvmorg-20.1.0
         lookup-only: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -48,7 +48,7 @@ jobs:
       if: ${{ steps.check-cache.outputs.cache-hit != 'true' }}
       uses: actions/cache@main
       with:
-        key: llvmorg-17.0.0-rc3
+        key: llvmorg-20.1.0
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
           /tmp/x86_64-linux-gnu.tar.xz.sha256
@@ -61,10 +61,10 @@ jobs:
     strategy:
       matrix:
         target: [
-          'x86_64-unknown-linux-gnu',
-          'i386-unknown-linux-gnu',
-          'arm-unknown-linux-gnueabihf',
-          'aarch64-unknown-linux-gnu'
+          'x86_64-unknown-linux-gnu2.11',
+          'i386-unknown-linux-gnu2.11',
+          'arm-unknown-linux-gnueabihf2.13',
+          'aarch64-unknown-linux-gnu2.19'
         ]
     steps:
     - uses: actions/checkout@main
@@ -76,7 +76,7 @@ jobs:
     - name: Restore from cache
       uses: actions/cache@main
       with:
-        key: llvmorg-17.0.0-rc3
+        key: llvmorg-20.1.0
         fail-on-cache-miss: true
         path: |
           /tmp/x86_64-linux-gnu.tar.xz
@@ -93,7 +93,7 @@ jobs:
         bash './build.sh' '${{ matrix.target }}'
     - name: Copy libraries
       run: |
-        cp --recursive '/tmp/llvm-mingw-toolchain/lib/clang/17/lib' '/tmp/llvm-mingw/lib/clang/17'
+        cp --recursive '/tmp/llvm-mingw-toolchain/lib/clang/20/lib' '/tmp/llvm-mingw/lib/clang/20'
     - name: Generate tarball
       run: |
         declare tarball_filename='/tmp/${{ matrix.target }}.tar.xz'
