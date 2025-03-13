@@ -102,7 +102,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@main
       with:
-        name: cross-toolchain
+        name: ${{ matrix.target }}
         if-no-files-found: error
         path: |
           /tmp/${{ matrix.target }}.tar.xz

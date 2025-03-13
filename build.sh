@@ -3,10 +3,10 @@
 set -eu
 
 declare -r CURRENT_SOURCE_DIRECTORY="${PWD}"
-
 declare -r LLVM_MINGW_SOURCE="$(mktemp --directory --dry-run)"
 
 declare -r INSTALL_PREFIX='/tmp/llvm-mingw'
+declare -r SHARE_DIRECTORY="${INSTALL_PREFIX}/usr/local/share/llvm-mingw"
 
 declare build_type="${1}"
 
@@ -47,9 +47,7 @@ fi
 
 cd "${LLVM_MINGW_SOURCE}"
 
-CHECKOUT_ONLY='1' /proc/self/exe './build-llvm.sh'
-
-# patch --input="${CURRENT_SOURCE_DIRECTORY}/patches/project_llvm.patch" --strip=1 --directory='./llvm-project'
+CHECKOUT_ONLY='1' bash './build-llvm.sh'
 
 if ! (( is_native )); then
 	[ -d "${INSTALL_PREFIX}/lib" ] || mkdir --parent "${INSTALL_PREFIX}/lib"
@@ -74,16 +72,12 @@ if ! (( is_native )); then
 		'./build-openmp.sh'
 fi
 
-sed --in-place 's/CMAKE_BUILD_TYPE=Release/CMAKE_BUILD_TYPE=MinSizeRel/g' \
-	'./build-mingw-w64.sh' \
-	'./build-mingw-w64-libraries.sh' \
-	'./build-compiler-rt.sh' \
-	'./build-libcxx.sh' \
-	'./build-openmp.sh' \
-	'./build-llvm.sh'
-
-/proc/self/exe './build-all.sh' \
+bash './build-all.sh' \
 	${cross_compile_flags} \
 	--disable-lldb \
 	--with-default-msvcrt='msvcrt' \
 	"${INSTALL_PREFIX}"
+
+mkdir --parent "${SHARE_DIRECTORY}"
+
+cp --recursive "${CURRENT_SOURCE_DIRECTORY}/tools/dev/"* "${SHARE_DIRECTORY}"
