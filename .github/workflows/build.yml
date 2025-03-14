@@ -96,7 +96,10 @@ jobs:
         cp --recursive '/tmp/llvm-mingw-toolchain/lib/clang/20/lib' '/tmp/llvm-mingw/lib/clang/20'
     - name: Generate tarball
       run: |
-        declare tarball_filename='/tmp/${{ matrix.target }}.tar.xz'
+        declare target='${{ matrix.target }}'
+        target="${target%2.*}"
+        
+        declare tarball_filename="/tmp/${target}.tar.xz"
         tar --directory='/tmp' --create --file=- 'llvm-mingw' | xz --threads='0' --compress -9 > "${tarball_filename}"
         sha256sum "${tarball_filename}" | sed 's|/tmp/||' > "${tarball_filename}.sha256"
     - name: Upload artifact
@@ -105,5 +108,4 @@ jobs:
         name: ${{ matrix.target }}
         if-no-files-found: error
         path: |
-          /tmp/${{ matrix.target }}.tar.xz
-          /tmp/${{ matrix.target }}.tar.xz.sha256
+          /tmp/*-unknown-*.tar.xz*
