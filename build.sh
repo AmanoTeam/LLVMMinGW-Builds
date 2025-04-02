@@ -33,7 +33,7 @@ if ! [ -d "${LLVM_MINGW_SOURCE}" ]; then
 		"${LLVM_MINGW_SOURCE}"
 	
 	cd "${LLVM_MINGW_SOURCE}"
-	git checkout --quiet 'dc3e0ec'
+	git checkout --quiet '6104408'
 	
 	 patch \
 		--input="${CURRENT_SOURCE_DIRECTORY}/patches/llvm_mingw.patch" \
