@@ -16,7 +16,7 @@ fi
 
 declare is_native='0'
 
-if [ "${build_type}" == 'native' ]; then
+if [ "${build_type}" = 'native' ]; then
 	is_native='1'
 fi
 
@@ -33,7 +33,7 @@ if ! [ -d "${LLVM_MINGW_SOURCE}" ]; then
 		"${LLVM_MINGW_SOURCE}"
 	
 	cd "${LLVM_MINGW_SOURCE}"
-	git checkout --quiet '4c82a47'
+	git checkout --quiet 'f5a9041'
 	
 	 patch \
 		--input="${CURRENT_SOURCE_DIRECTORY}/patches/llvm_mingw.patch" \
