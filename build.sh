@@ -42,27 +42,43 @@ if ! [ -d "${LLVM_MINGW_SOURCE}" ]; then
 fi
 
 if ! (( is_native )) && ! [ -d "/usr/${build_type}" ]; then
-	sudo ln --symbolic "${OBGGCC_TOOLCHAIN}/${build_type}" "/usr/${build_type}"
+	sudo ln --symbolic "${CROSS_COMPILE_SYSROOT}" "/usr/${build_type}"
 fi
 
 cd "${LLVM_MINGW_SOURCE}"
 
 CHECKOUT_ONLY='1' bash './build-llvm.sh'
 
+# Bundle both libstdc++ and libgcc within host tools
 if ! (( is_native )); then
 	[ -d "${INSTALL_PREFIX}/lib" ] || mkdir --parent "${INSTALL_PREFIX}/lib"
 	
-	# libstdc++.so
-	declare name=$(realpath $("${build_type}-gcc" --print-file-name='libstdc++.so'))
-	declare soname=$(readelf -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+	# libstdc++
+	declare name=$(realpath $("${CC}" --print-file-name='libstdc++.so'))
 	
-	[ -f "${INSTALL_PREFIX}/lib/${soname}" ] || cp "${name}" "${INSTALL_PREFIX}/lib/${soname}"
+	# libestdc++
+	if ! [ -f "${name}" ]; then
+		declare name=$(realpath $("${CC}" --print-file-name='libestdc++.so'))
+	fi
 	
-	# libgcc_s.so
-	declare name=$(realpath $("${build_type}-gcc" --print-file-name='libgcc_s.so.1'))
-	declare soname=$(readelf -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+	declare soname=$("${READELF}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
 	
-	[ -f "${INSTALL_PREFIX}/lib/${soname}" ] || cp "${name}" "${INSTALL_PREFIX}/lib/${soname}"
+	cp "${name}" "${INSTALL_PREFIX}/lib/${soname}"
+	
+	# OpenBSD does not have a libgcc library
+	if [[ "${CROSS_COMPILE_TRIPLET}" != *'-openbsd'* ]]; then
+		# libgcc_s
+		declare name=$(realpath $("${CC}" --print-file-name='libgcc_s.so.1'))
+		
+		# libegCC
+		if ! [ -f "${name}" ]; then
+			declare name=$(realpath $("${CC}" --print-file-name='libegCC.so'))
+		fi
+		
+		declare soname=$("${READELF}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+		
+		cp "${name}" "${INSTALL_PREFIX}/lib/${soname}"
+	fi
 	
 	sed --in-place '/export PATH/d; s|$PREFIX/bin/|/tmp/llvm-mingw-toolchain/bin/|g' \
 		'./build-mingw-w64.sh' \
