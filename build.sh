@@ -80,6 +80,9 @@ if ! (( is_native )); then
 		cp "${name}" "${INSTALL_PREFIX}/lib/${soname}"
 	fi
 	
+	sed --in-place '/exit 1/d' \
+		'./build-llvm.sh'
+	
 	sed --in-place '/export PATH/d; s|$PREFIX/bin/|/tmp/llvm-mingw-toolchain/bin/|g' \
 		'./build-mingw-w64.sh' \
 		'./build-mingw-w64-libraries.sh' \
