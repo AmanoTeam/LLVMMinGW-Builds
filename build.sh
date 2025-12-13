@@ -2,11 +2,12 @@
 
 set -eu
 
+declare -r toolchain_directory='/tmp/llvm-mingw'
+
 declare -r CURRENT_SOURCE_DIRECTORY="${PWD}"
 declare -r LLVM_MINGW_SOURCE="$(mktemp --directory --dry-run)"
 
-declare -r INSTALL_PREFIX='/tmp/llvm-mingw'
-declare -r SHARE_DIRECTORY="${INSTALL_PREFIX}/usr/local/share/llvm-mingw"
+declare -r SHARE_DIRECTORY="${toolchain_directory}/usr/local/share/llvm-mingw"
 
 declare build_type="${1}"
 
@@ -33,7 +34,7 @@ if ! [ -d "${LLVM_MINGW_SOURCE}" ]; then
 		"${LLVM_MINGW_SOURCE}"
 	
 	cd "${LLVM_MINGW_SOURCE}"
-	git checkout --quiet 'f5a9041'
+	git checkout --quiet '1ce1cf7'
 	
 	 patch \
 		--input="${CURRENT_SOURCE_DIRECTORY}/patches/llvm_mingw.patch" \
@@ -50,19 +51,57 @@ cd "${LLVM_MINGW_SOURCE}"
 CHECKOUT_ONLY='1' bash './build-llvm.sh'
 
 if ! (( is_native )); then
-	[ -d "${INSTALL_PREFIX}/lib" ] || mkdir --parent "${INSTALL_PREFIX}/lib"
+	declare cc="${build_type}-gcc"
+	declare readelf='readelf'
+
+	[ -d "${toolchain_directory}/lib" ] || mkdir "${toolchain_directory}/lib"
 	
-	# libstdc++.so
-	declare name=$(realpath $("${build_type}-gcc" --print-file-name='libstdc++.so'))
-	declare soname=$(readelf -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+	# libestdc++
+	declare name=$(realpath $("${cc}" --print-file-name='libestdc++.so'))
 	
-	[ -f "${INSTALL_PREFIX}/lib/${soname}" ] || cp "${name}" "${INSTALL_PREFIX}/lib/${soname}"
+	# libstdc++
+	if ! [ -f "${name}" ]; then
+		declare name=$(realpath $("${cc}" --print-file-name='libstdc++.so'))
+	fi
 	
-	# libgcc_s.so
-	declare name=$(realpath $("${build_type}-gcc" --print-file-name='libgcc_s.so.1'))
-	declare soname=$(readelf -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
 	
-	[ -f "${INSTALL_PREFIX}/lib/${soname}" ] || cp "${name}" "${INSTALL_PREFIX}/lib/${soname}"
+	cp "${name}" "${toolchain_directory}/lib/${soname}"
+	
+	# libegcc
+	declare name=$(realpath $("${cc}" --print-file-name='libegcc.so'))
+	
+	if ! [ -f "${name}" ]; then
+		# libgcc_s
+		declare name=$(realpath $("${cc}" --print-file-name='libgcc_s.so.1'))
+	fi
+	
+	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+	
+	cp "${name}" "${toolchain_directory}/lib/${soname}"
+	
+	# libatomic
+	declare name=$(realpath $("${cc}" --print-file-name='libatomic.so'))
+	
+	declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+	
+	cp "${name}" "${toolchain_directory}/lib/${soname}"
+	
+	# libiconv
+	declare name=$(realpath $("${cc}" --print-file-name='libiconv.so'))
+	
+	if [ -f "${name}" ]; then
+		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+		cp "${name}" "${toolchain_directory}/lib/${soname}"
+	fi
+	
+	# libcharset
+	declare name=$(realpath $("${cc}" --print-file-name='libcharset.so'))
+	
+	if [ -f "${name}" ]; then
+		declare soname=$("${readelf}" -d "${name}" | grep 'SONAME' | sed --regexp-extended 's/.+\[(.+)\]/\1/g')
+		cp "${name}" "${toolchain_directory}/lib/${soname}"
+	fi
 	
 	sed --in-place '/export PATH/d; s|$PREFIX/bin/|/tmp/llvm-mingw-toolchain/bin/|g' \
 		'./build-mingw-w64.sh' \
@@ -76,7 +115,7 @@ bash './build-all.sh' \
 	${cross_compile_flags} \
 	--disable-lldb \
 	--with-default-msvcrt='msvcrt' \
-	"${INSTALL_PREFIX}"
+	"${toolchain_directory}"
 
 mkdir --parent "${SHARE_DIRECTORY}"
 
