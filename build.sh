@@ -50,6 +50,8 @@ cd "${LLVM_MINGW_SOURCE}"
 
 CHECKOUT_ONLY='1' bash './build-llvm.sh'
 
+mkdir "${toolchain_directory}"
+
 if ! (( is_native )); then
 	declare cc="${build_type}-gcc"
 	declare readelf='readelf'
