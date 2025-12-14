@@ -122,7 +122,7 @@ jobs:
         with:
           tag_name: llvm-mingw
           name: LLVM MinGW 21.1.7
-          files: ./*-unknown-*.tar.xz*
+          files: ./*/*-unknown-*.tar.xz*
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
