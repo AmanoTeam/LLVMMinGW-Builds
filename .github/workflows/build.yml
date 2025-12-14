@@ -93,7 +93,7 @@ jobs:
         bash './build.sh' '${{ matrix.target }}'
     - name: Copy libraries
       run: |
-        cp --recursive '/tmp/llvm-mingw-toolchain/lib/clang/20/lib' '/tmp/llvm-mingw/lib/clang/20'
+        cp --recursive '/tmp/llvm-mingw-toolchain/lib/clang/21/lib' '/tmp/llvm-mingw/lib/clang/21'
     - name: Generate tarball
       run: |
         declare target='${{ matrix.target }}'
@@ -109,3 +109,23 @@ jobs:
         if-no-files-found: error
         path: |
           /tmp/*-unknown-*.tar.xz*
+
+  release:
+    needs: cross-build
+    runs-on: ubuntu-latest
+    name: Create release
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@main
+      - name: Create release
+        uses: softprops/action-gh-release@master
+        with:
+          tag_name: llvm-mingw
+          name: LLVM MinGW 21.1.7
+          files: /tmp/*-unknown-*.tar.xz*
+          draft: false
+          prerelease: false
+          fail_on_unmatched_files: true
+          body: "* Update to LLVM MinGW 21.1.7"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
